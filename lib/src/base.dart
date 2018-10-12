@@ -22,6 +22,8 @@ class FlutterWebviewPlugin {
   final _onScrollXChanged = new StreamController<double>.broadcast();
   final _onScrollYChanged = new StreamController<double>.broadcast();
   final _onHttpError = new StreamController<WebViewHttpError>.broadcast();
+  final _onRequestStart = new StreamController<WebViewRequestData>.broadcast();
+  final _onUrlLoading = new StreamController<WebViewRequestData>.broadcast();
 
   static FlutterWebviewPlugin _instance;
 
@@ -53,7 +55,13 @@ class FlutterWebviewPlugin {
         break;
       case 'onHttpError':
         _onHttpError.add(
-            WebViewHttpError(call.arguments['code'], call.arguments['url']));
+            WebViewHttpError(call.arguments['code'], call.arguments['url'], call.arguments['requestHeaders'], call.arguments['responseHeaders']));
+        break;
+      case 'onRequestStart':
+        _onRequestStart.add(WebViewRequestData(call.arguments['url'], call.arguments['method'], call.arguments['requestHeaders']));
+        break;
+      case 'onUrlLoading':
+        _onUrlLoading.add(WebViewRequestData(call.arguments['url'], call.arguments['method'], call.arguments['requestHeaders']));
         break;
     }
   }
@@ -76,6 +84,10 @@ class FlutterWebviewPlugin {
   Stream<double> get onScrollXChanged => _onScrollXChanged.stream;
 
   Stream<WebViewHttpError> get onHttpError => _onHttpError.stream;
+
+  Stream<WebViewRequestData> get onRequestStart => _onRequestStart.stream;
+
+  Stream<WebViewRequestData> get onUrlLoading => _onUrlLoading.stream;
 
   /// Start the Webview with [url]
   /// - [headers] specify additional HTTP headers
@@ -192,6 +204,8 @@ class FlutterWebviewPlugin {
     _onScrollXChanged.close();
     _onScrollYChanged.close();
     _onHttpError.close();
+    _onRequestStart.close();
+    _onUrlLoading.close();
     _instance = null;
   }
 
@@ -249,6 +263,16 @@ class WebViewStateChanged {
 class WebViewHttpError {
   final String url;
   final String code;
+  final Map requestHeaders;
+  final Map responseHeaders;
 
-  WebViewHttpError(this.code, this.url);
+  WebViewHttpError(this.code, this.url, this.requestHeaders, this.responseHeaders);
+}
+
+class WebViewRequestData {
+  final String url;
+  final String method;
+  final Map requestHeaders;
+
+  WebViewRequestData(this.url, this.method, this.requestHeaders);
 }

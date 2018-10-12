@@ -1,10 +1,7 @@
 package com.flutter_webview_plugin;
 
 import android.graphics.Bitmap;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebResourceResponse;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
+import android.webkit.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,6 +13,33 @@ import java.util.Map;
 public class BrowserClient extends WebViewClient {
     public BrowserClient() {
         super();
+    }
+
+    @Override
+    public void onReceivedSslError(WebView view, SslErrorHandler handler, android.net.http.SslError error){
+        handler.proceed();
+    }
+
+    @Override
+    public WebResourceResponse shouldInterceptRequest (WebView view,
+                                                       WebResourceRequest request) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("url", request.getUrl().toString());
+        data.put("method", request.getMethod());
+        data.put("requestHeaders", request.getRequestHeaders());
+        FlutterWebviewPlugin.channel.invokeMethod("onRequestStart", data);
+        return null;
+    }
+
+    @Override
+    public boolean shouldOverrideUrlLoading (WebView view,
+                                             WebResourceRequest request){
+        Map<String, Object> data = new HashMap<>();
+        data.put("url", request.getUrl().toString());
+        data.put("method", request.getMethod());
+        data.put("requestHeaders", request.getRequestHeaders());
+        FlutterWebviewPlugin.channel.invokeMethod("onUrlLoading", data);
+        return false;
     }
 
     @Override
@@ -46,6 +70,8 @@ public class BrowserClient extends WebViewClient {
         Map<String, Object> data = new HashMap<>();
         data.put("url", request.getUrl().toString());
         data.put("code", Integer.toString(errorResponse.getStatusCode()));
+        data.put("requestHeaders", request.getRequestHeaders());
+        data.put("responseHeaders", errorResponse.getResponseHeaders());
         FlutterWebviewPlugin.channel.invokeMethod("onHttpError", data);
     }
 }

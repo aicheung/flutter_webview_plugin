@@ -214,6 +214,12 @@ static NSString *const CHANNEL_NAME = @"flutter_webview_plugin";
                 @"navigationType": [NSNumber numberWithInt:navigationAction.navigationType]};
     [channel invokeMethod:@"onState" arguments:data];
 
+    id data2 = @{@"url": navigationAction.request.URL.absoluteString,
+                    @"method": navigationAction.request.HTTPMethod,
+                    @"requestHeaders": navigationAction.allHTTPHeaderFields};
+    [channel invokeMethod:@"onRequestStart" arguments:data2];
+    [channel invokeMethod:@"onUrlLoading" arguments:data2];
+
     if (navigationAction.navigationType == WKNavigationTypeBackForward) {
         [channel invokeMethod:@"onBackPressed" arguments:nil];
     } else {
@@ -250,8 +256,9 @@ static NSString *const CHANNEL_NAME = @"flutter_webview_plugin";
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationResponse:(WKNavigationResponse *)navigationResponse decisionHandler:(void (^)(WKNavigationResponsePolicy))decisionHandler {
     if ([navigationResponse.response isKindOfClass:[NSHTTPURLResponse class]]) {
         NSHTTPURLResponse * response = (NSHTTPURLResponse *)navigationResponse.response;
+        NSDictionary *headers = ((NSHTTPURLResponse *)navigationResponse.response).allHeaderFields;
 
-        [channel invokeMethod:@"onHttpError" arguments:@{@"code": [NSString stringWithFormat:@"%ld", response.statusCode], @"url": webView.URL.absoluteString}];
+        [channel invokeMethod:@"onHttpError" arguments:@{@"code": [NSString stringWithFormat:@"%ld", response.statusCode], @"url": webView.URL.absoluteString, @"responseHeaders": headers}];
     }
     decisionHandler(WKNavigationResponsePolicyAllow);
 }
